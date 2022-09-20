@@ -1,7 +1,11 @@
 import React from "react";
-
-// useQuery à pour rôle de charger les données et de les mettre en cache.
+/* 
+- useQuery a pour rôle de charger les données et de les mettre en cache.
+- useMutation nous permet de faire nos modifications sur le serveur grâce à nos méthodes importées depuis axios. "useMutation" nous retourne une méthode "mutate" que l'on va appeler au moment du déclenchement de notre create/update/delete.
+- useQueryClient et un objet qui va nous fournir tout un ensemble de méthodes pour manipuler le cache.
+*/
 import { useQuery, useMutation, useQueryClient } from "react-query";
+// J'importe mes méthodes depuis mon api.
 import { getTodos, addTodo, updateTodo, deleteTodo } from "../../api/todosApi";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -10,18 +14,17 @@ import { useState } from "react";
 
 const TodoList = () => {
   const [newTodo, setNewTodo] = useState("");
-  // J'intencie mon queryClient fourni par mon  <QueryClientProvider client={queryClient}> dans mon index.js
-  // et qui englobe mon app.
+  /* J'instancie mon queryClient fourni par mon  <QueryClientProvider client={queryClient}> (qui englobe l'application) dans mon index.js. */
   const queryClient = useQueryClient();
 
   // Destructuring
   const {
-    // ensemble des (fourni par eact-query) propriétés qui vont nous permettre de connaître l’état de la requête
+    // Ensemble des propriétés (fournis par eact-query) qui vont nous permettre de connaître l’état de la requête
     isLoading,
     isSuccess,
     isError,
     error,
-    // mes données stoké dans l'objet data : todos
+    // Mes données stokées dans l'objet "data : todos"
     data: todos,
 
     /* useQuery a pour rôle de charger les données et de les mettre en cache :
@@ -35,7 +38,7 @@ const TodoList = () => {
     select: (data) => data.sort((a, b) => b.id - a.id),
   });
 
-  // Je creais des mutations qui vont nous permettre de : add/update/delete
+  // Je créais des mutations qui vont nous permettre de : add/update/delete
   const addTodoMutation = useMutation(addTodo, {
     onSuccess: () => {
       // Invalide le cache et récupère à nouveau les données
@@ -43,6 +46,8 @@ const TodoList = () => {
     },
   });
 
+  
+  // - useMutation nous permet de faire nos modifications sur le serveur grâce à nos méthodes importées depuis axios. 
   const updateTodoMutation = useMutation(updateTodo, {
     onSuccess: () => {
       // Invalide le cache et récupère à nouveau les données
@@ -59,6 +64,7 @@ const TodoList = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // "useMutation" nous retourne une méthode "mutate" que l'on va appeler au moment du déclanchement de notre create/update/delete.
     addTodoMutation.mutate({
       userId: 1,
       title: newTodo,
