@@ -1,9 +1,11 @@
 import React from "react";
+
+// useQuery à pour rôle de charger les données et de les mettre en cache.
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { getTodos, addTodo, updateTodo, deleteTodo } from "../../api/todosApi";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { falTrash, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faTrash, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { useState } from "react";
 
 const TodoList = () => {
@@ -12,17 +14,26 @@ const TodoList = () => {
   // et qui englobe mon app.
   const queryClient = useQueryClient();
 
-  // destructuring
+  // Destructuring
   const {
-    // options fournis par react-query
+    // ensemble des (fourni par eact-query) propriétés qui vont nous permettre de connaître l’état de la requête
     isLoading,
+    isSuccess,
     isError,
     error,
     // mes données stoké dans l'objet data : todos
     data: todos,
-    // 1er argu je donne un nom au cache qui est stocké
-    // 2nd argu j'appel la fonction dont j'ai besoin
-  } = useQuery("todos", getTodos);
+
+    /* useQuery a pour rôle de charger les données et de les mettre en cache :
+        - 1er paramètre = clé que l'on va utiliser pour stocker nos données dans le cache ça peut être un tableau 
+        ou une chaîne de caractère. 
+        - 2 eme paramètre = fonction asynchrone qui exécute une requête sur mon serveur */
+  } = useQuery("todos", getTodos, {
+    // Permet de définir une durée de vie des données mise cache.
+    staleTime: 5 * 60 * 1000,
+    // Tri de mon tableau
+    select: (data) => data.sort((a, b) => b.id - a.id),
+  });
 
   // Je creais des mutations qui vont nous permettre de : add/update/delete
   const addTodoMutation = useMutation(addTodo, {
@@ -56,6 +67,7 @@ const TodoList = () => {
     setNewTodo("");
   };
 
+  // Inupt New Item
   const newItemSection = (
     <form onSubmit={handleSubmit}>
       <label htmlFor="new-todo">Enter a new todo item</label>
@@ -73,15 +85,46 @@ const TodoList = () => {
       </button>
     </form>
   );
+
+  // content peut afficher trois états en fonctions de l'état de la requêtes isLoading, isError, isSuccess.
+  let content;
+  
   // Si je suis en état de chargement ou si j'ai une erreur je renvoie un message sinon je renvoie
   // mes données.
-  let content;
   if (isLoading) {
     content = <p>Loading ...</p>;
   } else if (isError) {
     content = <p>{error.message}</p>;
-  } else {
-    content = JSON.stringify(todos);
+  } else if (isSuccess) {
+    // Me renvoie les données brut le temps du test
+    // content = JSON.stringify(todos);
+    content = todos.map((todo) => {
+      return (
+        <article key={todo.id}>
+          <div className="todo">
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              id={todo.id}
+              onChange={() =>
+                // spread de mon tableau de todo que je maj par l'inverse de la valeur actuelle.
+                updateTodoMutation.mutate({
+                  ...todo,
+                  completed: !todo.completed,
+                })
+              }
+            />
+            <label htmlFor={todo.id}>{todo.title}</label>
+          </div>
+          <button
+            className="trash"
+            onClick={() => deleteTodoMutation.mutate({ id: todo.id })}
+          >
+            <FontAwesomeIcon icon={faTrash} />
+          </button>
+        </article>
+      );
+    });
   }
 
   return (
